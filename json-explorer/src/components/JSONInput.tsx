@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useMemo } from "react";
 import { FileJson, AlertCircle, ChevronDown, Upload } from "lucide-react";
 import { samples } from "@/data/samples";
 
@@ -19,11 +19,7 @@ export function JSONInput({
 }: JSONInputProps) {
   const [showSamples, setShowSamples] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-  const [lineCount, setLineCount] = useState(1);
-
-  useEffect(() => {
-    setLineCount(value.split("\n").length);
-  }, [value]);
+  const lineCount = useMemo(() => value.split("\n").length, [value]);
 
   const handleSelectSample = (sampleValue: string) => {
     onLoadSample(sampleValue);
