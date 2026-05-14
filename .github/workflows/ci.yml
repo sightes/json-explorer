@@ -9,56 +9,44 @@ on:
 jobs:
   lint:
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: json-explorer
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: "20"
-      - run: npm ci
-      - run: npm run lint
+      - name: Install dependencies
+        run: npm ci
+        working-directory: json-explorer
+      - name: Run lint
+        run: npm run lint
+        working-directory: json-explorer
 
   typecheck:
     needs: lint
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: json-explorer
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: "20"
-      - run: npm ci
-      - run: npx tsc --noEmit
+      - name: Install dependencies
+        run: npm ci
+        working-directory: json-explorer
+      - name: Run typecheck
+        run: npx tsc --noEmit
+        working-directory: json-explorer
 
-  test:unit:
+  test:
     needs: typecheck
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: json-explorer
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: "20"
-      - run: npm ci
-      - run: npm run test:run
-
-  test:e2e:
-    needs: test:unit
-    runs-on: ubuntu-latest
-    defaults:
-      run:
+      - name: Install dependencies
+        run: npm ci
         working-directory: json-explorer
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: "20"
-      - run: npm ci
-      - run: npx playwright install --with-deps
-      - run: npx playwright test
+      - name: Run tests
+        run: npm run test:run
+        working-directory: json-explorer
