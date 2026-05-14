@@ -1,0 +1,80 @@
+name: Dependencies
+
+on:
+  schedule:
+    - cron: "0 9 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  outdated:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: json-explorer
+    outputs:
+      has_outdated: ${{ steps.check.outputs.has_outdated }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+      - run: npm ci
+      - id: check
+        run: |
+          output=$(npm outdated --json 2>/dev/null || echo '{}')
+          echo "has_outdated=$([[ "$output" != "{}" ]] && echo 'true' || echo 'false')" >> $GITHUB_OUTPUT
+          echo "$output" >> outdated.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: outdated
+          path: json-explorer/outdated.json
+
+  audit:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: json-explorer
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+      - run: npm ci
+      - run: npm audit --audit-level=moderate
+
+  update:
+    needs: [outdated, audit]
+    runs-on: ubuntu-latest
+    if: needs.outdated.outputs.has_outdated == 'true'
+    defaults:
+      run:
+        working-directory: json-explorer
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+      - run: npm ci
+      - name: Update dependencies
+        run: |
+          npm update
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+      - name: Create Pull Request
+        uses: peter-evans/create-pull-request@v7
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          commit-message: "chore(deps): update dependencies"
+          title: "chore(deps): update dependencies"
+          branch: "dep-update/update-dependencies"
+          delete-branch: true
