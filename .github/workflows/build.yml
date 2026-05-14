@@ -1,0 +1,28 @@
+name: Build
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: Install dependencies
+        run: npm ci
+        working-directory: json-explorer
+      - name: Build
+        run: npm run build
+        working-directory: json-explorer
+      - uses: actions/upload-artifact@v4
+        with:
+          name: next-build
+          path: json-explorer/.next
+          retention-days: 7
