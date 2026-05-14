@@ -1,5 +1,13 @@
 import { describe, it, expect } from 'vitest';
 
+type JSONNode = {
+  key: string;
+  value: unknown;
+  type: string;
+  path: string;
+  children?: JSONNode[];
+};
+
 function getType(value: unknown): string {
   if (value === null) return 'null';
   if (Array.isArray(value)) return 'array';
@@ -10,11 +18,11 @@ function getType(value: unknown): string {
   return 'null';
 }
 
-function buildTree(key: string, value: unknown, path: string): { key: string; value: unknown; type: string; path: string; children?: unknown[] } {
+function buildTree(key: string, value: unknown, path: string): JSONNode {
   const currentPath = path ? `${path}.${key}` : key;
   const type = getType(value);
 
-  const node = { key, value, type, path: currentPath };
+  const node: JSONNode = { key, value, type, path: currentPath };
 
   if (type === 'object' && value !== null) {
     node.children = Object.entries(value as Record<string, unknown>).map(([k, v]) =>
@@ -100,9 +108,9 @@ describe('buildTree', () => {
 
   it('creates correct nested paths', () => {
     const node = buildTree('user', { address: { city: 'NYC' } }, '');
-    const addressNode = node.children!.find(c => c.key === 'address') as { children?: unknown[] };
-    const cityNode = addressNode.children!.find(c => c.key === 'city');
-    expect(cityNode.path).toBe('user.address.city');
+    const addressNode = node.children!.find(c => c.key === 'address');
+    const cityNode = addressNode!.children!.find(c => c.key === 'city');
+    expect(cityNode!.path).toBe('user.address.city');
   });
 });
 
@@ -122,13 +130,13 @@ describe('parseJSON', () => {
     const result = parseJSON('{"name":"John"}');
     expect(result.error).toBeNull();
     expect(result.data).toBeDefined();
-    expect(result.data.key).toBe('root');
+    expect((result.data as JSONNode).key).toBe('root');
   });
 
   it('parses valid JSON array', () => {
     const result = parseJSON('[1, 2, 3]');
     expect(result.error).toBeNull();
-    expect(result.data.type).toBe('array');
+    expect((result.data as JSONNode).type).toBe('array');
   });
 
   it('returns error for invalid JSON', () => {
